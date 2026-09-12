@@ -1,80 +1,50 @@
-// Typed access to the local dashboard API.
-//
-// Auth is an HttpOnly `relay_session` cookie set by POST /session; the page never
-// holds the token. The server also rejects non-GET requests whose Origin is not the
-// loopback dashboard, which the Vite dev proxy rewrites for us in development.
-import type {
-  AgentConfig, AvailabilityAction, HistoryResponse, Metrics, ModelJob,
-  ModelsResponse, Prices, RuntimeInfo, Status, UsageResponse,
-} from './types';
+export type Status = { host_id: string; os: string; arch: string; running: boolean; sharing: boolean; started_at?: string; dashboard: string };
+export type Model = { id: string; name: string; digest?: string };
+export type Backend = { id: string; kind: string; source: string; ready: boolean; capacity: number; available: number; models: Model[] };
+export type Offers = Record<string, Record<string, boolean>>;
+export type UsageSummary = { requests: number; successful: number; failed: number; input_tokens: number; output_tokens: number; total_tokens: number; usage_reported: boolean; complete: boolean };
+export type Usage = { today: UsageSummary; lifetime: UsageSummary; live?: { requests: number; bytes: number; output_tokens_estimate: number }; complete: boolean };
+export type HistoryEvent = { time: string; kind: string; model?: string; status?: string; duration_ms?: number; input_tokens?: number; output_tokens?: number; total_tokens?: number; usage_reported?: boolean; usage_complete?: boolean; total_reported?: boolean };
+export type Price = { input_per_million?: string; output_per_million?: string };
+export type Prices = Record<string, Price>;
+export type BackendConfig = { id: string; label?: string; kind: string; url: string; key_env?: string; models: string[]; concurrency: number };
+export type AgentConfig = { coordinator_url: string; host_id: string; token_env: string; start_timeout_seconds: number; total_timeout_seconds: number; backends: BackendConfig[]; prices?: Prices; availability?: { enabled: boolean; paused: boolean; timezone?: string } };
+export type ModelJob = { id: string; model: string; status: string; progress: number; error?: string };
 
-/** Message the server returns when the session cookie is missing or stale. */
+const emptySummary: UsageSummary = { requests: 0, successful: 0, failed: 0, input_tokens: 0, output_tokens: 0, total_tokens: 0, usage_reported: false, complete: true };
+export const emptyStatus: Status = { host_id: '—', os: '—', arch: '—', running: false, sharing: false, dashboard: 'http://127.0.0.1:7331' };
+export const emptyUsage: Usage = { today: emptySummary, lifetime: emptySummary, complete: true };
+
 export const AUTH_REQUIRED = 'dashboard authentication required';
 
-export class ApiError extends Error {
-  readonly status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-  }
-  get authRequired(): boolean {
-    return this.status === 401 || this.message === AUTH_REQUIRED;
-  }
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  let response: Response;
-  try {
-    response = await fetch('/api/v1' + path, {
-      ...init,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    });
-  } catch {
-    // Network-level failure: the agent stopped, or the browser is offline.
-    throw new ApiError('Cannot reach the Relay agent on this machine.', 0);
-  }
-  const body = await response.json().catch(() => null);
+export async function api<T = any>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch('/api/v1' + path, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) } });
   if (!response.ok) {
-    const message = body && typeof body.error === 'string' ? body.error : `Request failed (${response.status})`;
-    throw new ApiError(message, response.status);
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed (${response.status})`);
   }
-  return body as T;
+  return response.json();
 }
 
-const post = <T>(path: string, body: unknown) =>
-  request<T>(path, { method: 'POST', body: JSON.stringify(body) });
+export function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
-export const api = {
-  /** Exchange a dashboard token for the session cookie. */
-  authenticate: (token: string) => post<{ authenticated: boolean }>('/session', { token }),
+const KIND_NAMES: Record<string, string> = { ollama: 'Ollama', cliproxyapi: 'CLIProxyAPI' };
 
-  status: () => request<Status>('/status'),
-  metrics: () => request<Metrics>('/metrics'),
-  runtimes: () => request<RuntimeInfo[]>('/runtimes'),
-  usage: () => request<UsageResponse>('/usage'),
-  history: () => request<HistoryResponse>('/history'),
-  models: () => request<ModelsResponse>('/models'),
-  config: () => request<AgentConfig>('/config'),
-  prices: () => request<Prices>('/prices'),
-  modelJobs: () => request<ModelJob[]>('/models/jobs'),
+/** Product name for a runtime kind, used as the display fallback and the provider column. */
+export function kindName(kind: string) {
+  return KIND_NAMES[kind] || kind;
+}
 
-  /** pause: take no new work. stop: also cancel work in flight. resume: share again. */
-  setAvailability: (action: AvailabilityAction) => post<Status>('/availability', { action }),
+/** Display name for a backend: the configured label; the product name when the id is just the kind; otherwise the id. */
+export function backendTitle(backend: { id: string; kind?: string }, config: AgentConfig | null) {
+  const configured = config?.backends.find(b => b.id === backend.id);
+  if (configured?.label) return configured.label;
+  const kind = backend.kind || configured?.kind || '';
+  return backend.id === kind ? kindName(kind) : backend.id;
+}
 
-  /** `model` is the runtime's native model name, not the prefixed id. */
-  setOffer: (backend_id: string, model: string, offer: boolean) =>
-    post<{ saved: boolean }>('/models', { backend_id, model, offer }),
-
-  /** Pulls into the first configured Ollama backend; poll modelJobs() for progress. */
-  installModel: (model: string) => post<ModelJob>('/models/install', { model }),
-  removeModel: (model: string) => post<{ removed: boolean }>('/models/remove', { model }),
-
-  /** `model` is the prefixed model id here, matching the prices map keys. */
-  setPrice: (model: string, input_per_million: string, output_per_million: string) =>
-    post<Prices>('/prices', { model, input_per_million, output_per_million }),
-
-  /** Send the whole config back; saving restarts the agent loop. */
-  saveConfig: (config: AgentConfig) =>
-    request<AgentConfig>('/config', { method: 'PUT', body: JSON.stringify(config) }),
-};
+export function backendRole(kind: string) {
+  return kind === 'ollama' ? 'Local weights runtime' : 'Provider gateway';
+}
