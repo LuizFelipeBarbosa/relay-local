@@ -32,6 +32,18 @@ type Agent struct {
 	logger *slog.Logger
 	mu     sync.Mutex
 	slots  []*slot
+	event  func(AttemptEvent)
+}
+
+type AttemptEvent struct {
+	RequestID string
+	AttemptID string
+	BackendID string
+	Model     string
+	Type      string
+	Code      string
+	Duration  time.Duration
+	Usage     json.RawMessage
 }
 
 func New(c config.Agent, logger *slog.Logger) (*Agent, error) {
@@ -51,6 +63,21 @@ func New(c config.Agent, logger *slog.Logger) (*Agent, error) {
 func (a *Agent) Close() {
 	for _, s := range a.slots {
 		s.runtime.Close()
+	}
+}
+
+func (a *Agent) SetEventHandler(handler func(AttemptEvent)) {
+	a.mu.Lock()
+	a.event = handler
+	a.mu.Unlock()
+}
+
+func (a *Agent) emit(event AttemptEvent) {
+	a.mu.Lock()
+	handler := a.event
+	a.mu.Unlock()
+	if handler != nil {
+		handler(event)
 	}
 }
 
@@ -353,6 +380,7 @@ func (a *Agent) execute(ctx context.Context, p *wire.Peer, m protocol.Message, s
 			}
 		}
 		a.logger.Info("attempt finished", "request_id", m.RequestID, "attempt_id", m.AttemptID, "backend_id", m.BackendID, "duration_ms", time.Since(started).Milliseconds(), "bytes", count, "result", terminal.Type, "code", terminal.Code, "usage", string(terminal.Usage))
+		a.emit(AttemptEvent{RequestID: m.RequestID, AttemptID: m.AttemptID, BackendID: m.BackendID, Model: model, Type: terminal.Type, Code: terminal.Code, Duration: time.Since(started), Usage: append(json.RawMessage(nil), terminal.Usage...)})
 	}()
 	requestCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

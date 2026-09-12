@@ -89,7 +89,9 @@ func New(c config.Agent, path, stateDir string, logger *slog.Logger) (*Managed, 
 		return nil, err
 	}
 	store, _ := history.Open(filepath.Join(stateDir, "history.db"))
-	return &Managed{config: c, path: path, stateDir: stateDir, token: token, agent: a, logger: logger, jobs: map[string]*ModelJob{}, history: store}, nil
+	m := &Managed{config: c, path: path, stateDir: stateDir, token: token, agent: a, logger: logger, jobs: map[string]*ModelJob{}, history: store}
+	a.SetEventHandler(m.recordAttempt)
+	return m, nil
 }
 
 func dashboardToken(path string) (string, error) {
@@ -213,6 +215,7 @@ func (m *Managed) Handler(ctx context.Context) http.Handler {
 	mux.HandleFunc("/api/v1/metrics", m.auth(func(w http.ResponseWriter, r *http.Request) { writeJSON(w, metrics.Read()) }))
 	mux.HandleFunc("/api/v1/runtimes", m.auth(m.runtimes))
 	mux.HandleFunc("/api/v1/history", m.auth(m.recentHistory))
+	mux.HandleFunc("/api/v1/usage", m.auth(m.usage))
 	mux.HandleFunc("/api/v1/models", m.auth(m.models))
 	mux.HandleFunc("/api/v1/models/jobs", m.auth(m.modelJobs))
 	mux.HandleFunc("/api/v1/models/install", m.auth(m.installModel))
@@ -290,6 +293,52 @@ func (m *Managed) recentHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, map[string]any{"events": events, "complete": true})
+}
+
+func (m *Managed) usage(w http.ResponseWriter, r *http.Request) {
+	if m.history == nil {
+		writeJSON(w, map[string]any{"today": history.Summary{}, "lifetime": history.Summary{}, "complete": false})
+		return
+	}
+	now := time.Now()
+	today, todayErr := m.history.Summary(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()))
+	lifetime, lifetimeErr := m.history.Summary(time.Time{})
+	if todayErr != nil || lifetimeErr != nil {
+		writeJSON(w, map[string]any{"today": today, "lifetime": lifetime, "complete": false})
+		return
+	}
+	writeJSON(w, map[string]any{"today": today, "lifetime": lifetime, "complete": true})
+}
+
+func (m *Managed) recordAttempt(event agent.AttemptEvent) {
+	if m.history == nil {
+		return
+	}
+	var usage map[string]int64
+	if len(event.Usage) > 0 && json.Unmarshal(event.Usage, &usage) != nil {
+		usage = nil
+	}
+	input, inputOK := usage["prompt_tokens"]
+	output, outputOK := usage["completion_tokens"]
+	total, totalOK := usage["total_tokens"]
+	status := "failed"
+	if event.Type == "response_end" && event.Code == "" {
+		status = "completed"
+	}
+	if err := m.history.Record(history.Event{
+		Kind:          "request",
+		Model:         event.BackendID + "/" + event.Model,
+		Status:        status,
+		DurationMS:    event.Duration.Milliseconds(),
+		InputTokens:   input,
+		OutputTokens:  output,
+		TotalTokens:   total,
+		UsageReported: inputOK || outputOK || totalOK,
+		UsageComplete: inputOK && outputOK,
+		TotalReported: totalOK,
+	}); err != nil {
+		m.logger.Warn("could not record request history", "kind", "request")
+	}
 }
 
 func (m *Managed) installModel(w http.ResponseWriter, r *http.Request) {

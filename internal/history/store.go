@@ -2,6 +2,7 @@ package history
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"go.etcd.io/bbolt"
@@ -10,13 +11,28 @@ import (
 var bucket = []byte("events")
 
 type Event struct {
-	Time         time.Time `json:"time"`
-	Kind         string    `json:"kind"`
-	Model        string    `json:"model,omitempty"`
-	Status       string    `json:"status,omitempty"`
-	DurationMS   int64     `json:"duration_ms,omitempty"`
-	InputTokens  int64     `json:"input_tokens,omitempty"`
-	OutputTokens int64     `json:"output_tokens,omitempty"`
+	Time          time.Time `json:"time"`
+	Kind          string    `json:"kind"`
+	Model         string    `json:"model,omitempty"`
+	Status        string    `json:"status,omitempty"`
+	DurationMS    int64     `json:"duration_ms,omitempty"`
+	InputTokens   int64     `json:"input_tokens,omitempty"`
+	OutputTokens  int64     `json:"output_tokens,omitempty"`
+	TotalTokens   int64     `json:"total_tokens,omitempty"`
+	UsageReported bool      `json:"usage_reported,omitempty"`
+	UsageComplete bool      `json:"usage_complete,omitempty"`
+	TotalReported bool      `json:"total_reported,omitempty"`
+}
+
+type Summary struct {
+	Requests      int   `json:"requests"`
+	Successful    int   `json:"successful"`
+	Failed        int   `json:"failed"`
+	InputTokens   int64 `json:"input_tokens"`
+	OutputTokens  int64 `json:"output_tokens"`
+	TotalTokens   int64 `json:"total_tokens"`
+	UsageReported bool  `json:"usage_reported"`
+	Complete      bool  `json:"complete"`
 }
 
 type Store struct{ db *bbolt.DB }
@@ -66,6 +82,42 @@ func (s *Store) Recent(limit int) ([]Event, error) {
 			}
 		}
 		return nil
+	})
+	return result, err
+}
+
+func (s *Store) Summary(since time.Time) (Summary, error) {
+	if s == nil || s.db == nil {
+		return Summary{}, errors.New("history store unavailable")
+	}
+	result := Summary{Complete: true}
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		return tx.Bucket(bucket).ForEach(func(_, value []byte) error {
+			var event Event
+			if json.Unmarshal(value, &event) != nil || event.Kind != "request" || (!since.IsZero() && event.Time.Before(since)) {
+				return nil
+			}
+			result.Requests++
+			if event.Status == "completed" {
+				result.Successful++
+				if !event.UsageComplete {
+					result.Complete = false
+				}
+			} else {
+				result.Failed++
+			}
+			if event.UsageReported {
+				result.UsageReported = true
+				result.InputTokens += event.InputTokens
+				result.OutputTokens += event.OutputTokens
+				if event.TotalReported {
+					result.TotalTokens += event.TotalTokens
+				} else {
+					result.TotalTokens += event.InputTokens + event.OutputTokens
+				}
+			}
+			return nil
+		})
 	})
 	return result, err
 }
