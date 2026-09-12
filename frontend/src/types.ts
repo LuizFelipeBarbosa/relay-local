@@ -63,9 +63,19 @@ export interface UsageSummary {
   complete: boolean;
 }
 
+/** Requests in flight right now, counted by the agent as chunks stream through. */
+export interface LiveUsage {
+  requests: number;
+  bytes: number;
+  /** The agent's own rough estimate: streamed bytes / 4. Not a provider figure. */
+  output_tokens_estimate: number;
+}
+
 export interface UsageResponse {
   today: UsageSummary;
   lifetime: UsageSummary;
+  /** Absent on an agent older than the live-attempt tracking. */
+  live?: LiveUsage;
   complete: boolean;
 }
 

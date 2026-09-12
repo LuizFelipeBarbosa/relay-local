@@ -46,6 +46,13 @@ type Managed struct {
 	jobsMu   sync.RWMutex
 	jobs     map[string]*ModelJob
 	history  *history.Store
+	activeMu sync.Mutex
+	active   map[string]*liveAttempt
+}
+
+type liveAttempt struct {
+	Model string
+	Bytes int64
 }
 
 type ModelJob struct {
@@ -89,7 +96,7 @@ func New(c config.Agent, path, stateDir string, logger *slog.Logger) (*Managed, 
 		return nil, err
 	}
 	store, _ := history.Open(filepath.Join(stateDir, "history.db"))
-	m := &Managed{config: c, path: path, stateDir: stateDir, token: token, agent: a, logger: logger, jobs: map[string]*ModelJob{}, history: store}
+	m := &Managed{config: c, path: path, stateDir: stateDir, token: token, agent: a, logger: logger, jobs: map[string]*ModelJob{}, history: store, active: map[string]*liveAttempt{}}
 	a.SetEventHandler(m.recordAttempt)
 	return m, nil
 }
@@ -307,10 +314,35 @@ func (m *Managed) usage(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]any{"today": today, "lifetime": lifetime, "complete": false})
 		return
 	}
-	writeJSON(w, map[string]any{"today": today, "lifetime": lifetime, "complete": true})
+	m.activeMu.Lock()
+	liveRequests, liveBytes := len(m.active), int64(0)
+	for _, attempt := range m.active {
+		liveBytes += attempt.Bytes
+	}
+	m.activeMu.Unlock()
+	writeJSON(w, map[string]any{"today": today, "lifetime": lifetime, "live": map[string]any{
+		"requests": liveRequests, "bytes": liveBytes, "output_tokens_estimate": liveBytes / 4,
+	}, "complete": true})
 }
 
 func (m *Managed) recordAttempt(event agent.AttemptEvent) {
+	if event.Type == "response_start" {
+		m.activeMu.Lock()
+		m.active[event.AttemptID] = &liveAttempt{Model: event.BackendID + "/" + event.Model}
+		m.activeMu.Unlock()
+		return
+	}
+	if event.Type == "response_chunk" {
+		m.activeMu.Lock()
+		if attempt := m.active[event.AttemptID]; attempt != nil {
+			attempt.Bytes += event.Bytes
+		}
+		m.activeMu.Unlock()
+		return
+	}
+	m.activeMu.Lock()
+	delete(m.active, event.AttemptID)
+	m.activeMu.Unlock()
 	if m.history == nil {
 		return
 	}

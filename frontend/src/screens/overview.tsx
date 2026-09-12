@@ -47,6 +47,8 @@ export function Overview({
     return requests.filter(event => new Date(event.time).getTime() >= hourAgo).length;
   }, [requests]);
   const isNew = useNewRows(requests.slice(0, 6).map(event => event.time));
+  // Live in-flight work, reported by the agent as chunks stream through.
+  const live = usage?.live ?? null;
   const host = metrics ? hostSummary(metrics) : null;
   const session = status ? sessionSeconds(status) : null;
 
@@ -74,6 +76,13 @@ export function Overview({
           <h1 className="ov-headline">
             {sharing.state === 'live' ? 'Taking requests' : sharing.state === 'paused' ? 'Not taking requests' : 'Agent is not running'}
           </h1>
+          {live && live.requests > 0 && (
+            <p className="ov-inflight">
+              <StatusDot tone="live" />
+              {live.requests === 1 ? '1 request in flight' : `${formatCount(live.requests)} requests in flight`}
+              <span className="ov-dim"> · {formatBytes(live.bytes)} streamed</span>
+            </p>
+          )}
           <p className="ov-sub">
             {sharing.state === 'live' && session !== null
               ? <>Running for {formatElapsed(session)}. {offeredCount === 0
@@ -139,8 +148,8 @@ export function Overview({
           </table>
         </TableScroll>
         <Caption>
-          “At once” is the concurrency you configured, not live usage — the agent does not report how many
-          requests are running right now.
+          “At once” is the concurrency you configured — the ceiling, not the current load. In flight, above,
+          is what the agent is streaming right now.
           {unreachable.length > 0 && ` ${unreachable.map(r => r.label).join(' and ')} did not answer the last check, so its models cannot be listed.`}
         </Caption>
       </Section>
@@ -231,6 +240,10 @@ export function Overview({
               <tr><th>Requests</th><td className="num">{today ? formatCount(today.requests) : '—'}</td></tr>
               <tr><th>Completed</th><td className="num">{today ? formatCount(today.successful) : '—'}</td></tr>
               <tr><th>Failed</th><td className="num">{today ? formatCount(today.failed) : '—'}</td></tr>
+              <tr>
+                <th>In flight</th>
+                <td className="num">{live ? formatCount(live.requests) : <NotReported>not reported</NotReported>}</td>
+              </tr>
               <tr>
                 <th>Tokens</th>
                 <td className="num">{today?.displayTotal !== null && today ? formatTokens(today.displayTotal!) : <NotReported />}</td>
