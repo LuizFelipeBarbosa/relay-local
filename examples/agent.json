@@ -1,0 +1,29 @@
+{
+  "coordinator_url": "ws://127.0.0.1:8080/relay/v1/connect",
+  "host_id": "my-mac",
+  "token_env": "RELAY_MAC_TOKEN",
+  "start_timeout_seconds": 120,
+  "total_timeout_seconds": 600,
+  "backends": [
+    {
+      "id": "ollama",
+      "kind": "ollama",
+      "url": "http://127.0.0.1:11434",
+      "models": [
+        "gemma4:e2b"
+      ],
+      "concurrency": 1
+    },
+    {
+      "id": "cliproxyapi",
+      "kind": "cliproxyapi",
+      "url": "http://127.0.0.1:8317",
+      "key_env": "CLIPROXYAPI_KEY",
+      "models": [
+        "gpt-5.6-sol",
+        "claude-sonnet-4-6"
+      ],
+      "concurrency": 1
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "valid": [
+    {
+      "version": 1,
+      "type": "hello",
+      "host_id": "my-mac",
+      "agent_version": "0.1.0",
+      "os": "darwin",
+      "arch": "arm64",
+      "backends": [
+        {
+          "id": "ollama",
+          "kind": "ollama",
+          "source": "local",
+          "ready": true,
+          "capacity": 1,
+          "available": 1,
+          "models": [
+            {
+              "id": "ollama/echo",
+              "name": "echo",
+              "digest": "example-digest"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "type": "welcome",
+      "host_id": "my-mac"
+    },
+    {
+      "version": 1,
+      "type": "heartbeat",
+      "heartbeat_id": 1
+    },
+    {
+      "version": 1,
+      "type": "heartbeat_ack",
+      "heartbeat_id": 1
+    },
+    {
+      "version": 1,
+      "type": "request",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "backend_id": "ollama",
+      "model": "ollama/echo",
+      "timeout_ms": 600000,
+      "start_timeout_ms": 120000,
+      "body": {
+        "model": "ollama/echo",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hello"
+          }
+        ]
+      }
+    },
+    {
+      "version": 1,
+      "type": "response_start",
+      "attempt_id": "attempt-1",
+      "status": 200,
+      "content_type": "text/event-stream"
+    },
+    {
+      "version": 1,
+      "type": "response_chunk",
+      "attempt_id": "attempt-1",
+      "seq": 1,
+      "data": "ZGF0YTogeyJjaG9pY2VzIjpbeyJkZWx0YSI6eyJjb250ZW50IjoiSGVsbG8ifX1dfQoKZGF0YTogW0RPTkVdCgo="
+    },
+    {
+      "version": 1,
+      "type": "response_end",
+      "attempt_id": "attempt-1",
+      "usage": {
+        "prompt_tokens": 4,
+        "completion_tokens": 1,
+        "total_tokens": 5
+      }
+    },
+    {
+      "version": 1,
+      "type": "cancel",
+      "attempt_id": "attempt-2"
+    },
+    {
+      "version": 1,
+      "type": "error",
+      "attempt_id": "attempt-2",
+      "code": "cancelled"
+    },
+    {
+      "version": 1,
+      "type": "catalog",
+      "backends": []
+    }
+  ],
+  "invalid": [
+    {
+      "version": 2,
+      "type": "hello",
+      "host_id": "my-mac"
+    },
+    {
+      "version": 1,
+      "type": "request",
+      "attempt_id": "missing-fields"
+    },
+    {
+      "version": 1,
+      "type": "heartbeat",
+      "heartbeat_id": 0
+    },
+    {
+      "version": 1,
+      "type": "response_chunk",
+      "attempt_id": "attempt-1",
+      "seq": 0,
+      "data": "YQ=="
+    },
+    {
+      "version": 1,
+      "type": "response_end",
+      "attempt_id": "attempt-1",
+      "usage": {
+        "secret": "must-not-be-usage"
+      }
+    },
+    {
+      "version": 1,
+      "type": "response_start",
+      "attempt_id": "attempt-1",
+      "status": 200,
+      "content_type": "text/html"
+    }
+  ]
+}

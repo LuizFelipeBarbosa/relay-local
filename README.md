@@ -10,6 +10,27 @@ fake backend, and a language-neutral protocol for a separately implemented serve
 The coordinator is intended for private integration testing; it uses in-memory
 state and has no accounts, payments, persistent queue, or ledger.
 
+## Local command center
+
+`relay install --mode gui` creates a per-user Relay configuration, writes a
+launchd (macOS) or systemd user service, and opens the local command center.
+`relay install --mode headless` performs the same setup and prints the command to
+start the service. Run `relay serve --config <path>` when a user service manager
+is unavailable, then use `relay dashboard --config <path>` to open the browser.
+
+The dashboard is bound to `127.0.0.1:7331` and authenticates with a generated
+owner-only token. It discovers the complete inventory exposed by configured local
+Ollama and CLIProxyAPI endpoints, while only allowlisted models are advertised to
+the coordinator. The Models page can enable or disable offers independently of
+what is installed. Ollama pull and delete jobs are exposed through the dashboard;
+provider sign-in remains in CLIProxyAPI's own supported browser or terminal flow.
+
+Runtime release artifacts are selected through the checked-in installer manifest
+and are rejected unless their SHA-256 matches the pinned entry. A release must
+populate that manifest for its supported macOS/Linux architectures before the
+installer can download a runtime. Existing runtime binaries and services are
+detected and can be used without downloading anything.
+
 ## Quick start
 
 For an interactive test with your installed Gemma model, follow

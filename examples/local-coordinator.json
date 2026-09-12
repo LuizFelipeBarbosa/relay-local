@@ -1,0 +1,9 @@
+{
+  "listen": "127.0.0.1:8080",
+  "buyer_token_env": "RELAY_BUYER_TOKEN",
+  "hosts": {
+    "my-mac": "RELAY_MAC_TOKEN"
+  },
+  "start_timeout_seconds": 120,
+  "total_timeout_seconds": 600
+}
