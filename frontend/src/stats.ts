@@ -4,8 +4,9 @@
 // helpers return zero or null and the views show a placeholder.
 import type { HistoryEvent, Prices } from './api';
 
-export type Range = '24h' | '7d' | '30d' | 'ytd';
-export const RANGES: Range[] = ['24h', '7d', '30d', 'ytd'];
+export type Range = '15m' | '24h' | '7d' | '30d' | 'ytd';
+export const RANGES: Range[] = ['15m', '24h', '7d', '30d', 'ytd'];
+export const RANGE_LABELS: Record<Range, string> = { '15m': '15 min', '24h': 'hourly', '7d': '7d', '30d': '30d', ytd: 'ytd' };
 
 export const formatNumber = (n: number) => new Intl.NumberFormat().format(n);
 export const formatCompact = (n: number) => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n));
@@ -78,12 +79,13 @@ export function eventsSince(events: HistoryEvent[], since: Date, until?: Date) {
   });
 }
 
-export type Series = { revenue: number[]; throughput: number[]; start: string; mid: string; hasData: boolean };
+export type Series = { revenue: number[]; throughput: number[]; tokens: number[]; bucket: '15m' | 'hour' | 'day' | 'month'; bucketLabels: string[]; start: string; mid: string; hasData: boolean };
 
 /** Buckets request history into a revenue-per-bucket and throughput-per-bucket series for the chart. */
 export function series(events: HistoryEvent[], prices: Prices, range: Range, now = new Date()): Series {
   const buckets = bucketsFor(range, now);
   const revenue = new Array(buckets.length).fill(0);
+  const tokens = new Array(buckets.length).fill(0);
   const outputTokens = new Array(buckets.length).fill(0);
   const seconds = new Array(buckets.length).fill(0);
   for (const event of events) {
@@ -91,6 +93,7 @@ export function series(events: HistoryEvent[], prices: Prices, range: Range, now
     const index = buckets.findIndex((b, i) => t >= b.getTime() && (i === buckets.length - 1 || t < buckets[i + 1].getTime()));
     if (index < 0) continue;
     revenue[index] += revenueOf(event, prices);
+    tokens[index] += tokensOf(event);
     if (event.status === 'completed' && event.output_tokens && event.duration_ms) {
       outputTokens[index] += event.output_tokens;
       seconds[index] += event.duration_ms / 1000;
@@ -98,10 +101,16 @@ export function series(events: HistoryEvent[], prices: Prices, range: Range, now
   }
   const throughput = outputTokens.map((tokens, i) => seconds[i] > 0 ? tokens / seconds[i] : 0);
   const labels = axisLabels(range, buckets);
-  return { revenue, throughput, ...labels, hasData: revenue.some(v => v > 0) || throughput.some(v => v > 0) };
+  const bucket = range === '15m' ? '15m' : range === '24h' ? 'hour' : range === 'ytd' ? 'month' : 'day';
+  const bucketLabels = buckets.map(d => bucket === 'month' ? d.toLocaleDateString(undefined, { month: 'short' }).toLowerCase() : bucket === 'day' ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toLowerCase() : timeLabel(d));
+  return { revenue, throughput, tokens, bucket, bucketLabels, ...labels, hasData: revenue.some(v => v > 0) || throughput.some(v => v > 0) || tokens.some(v => v > 0) };
 }
 
 function bucketsFor(range: Range, now: Date): Date[] {
+  if (range === '15m') {
+    const current = Math.floor(now.getTime() / 900_000) * 900_000;
+    return Array.from({ length: 16 }, (_, i) => new Date(current - (15 - i) * 900_000));
+  }
   if (range === '24h') {
     const currentHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
     return Array.from({ length: 24 }, (_, i) => new Date(currentHour.getTime() - (23 - i) * 3600_000));
@@ -115,9 +124,14 @@ function axisLabels(range: Range, buckets: Date[]) {
   const mid = buckets[Math.floor(buckets.length / 2)];
   const day = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toLowerCase();
   const month = (d: Date) => d.toLocaleDateString(undefined, { month: 'short' }).toLowerCase();
+  if (range === '15m') return { start: timeLabel(buckets[0]), mid: timeLabel(mid) };
   if (range === '24h') return { start: pad(buckets[0].getHours()) + ':00', mid: pad(mid.getHours()) + ':00' };
   if (range === 'ytd') return { start: month(buckets[0]), mid: buckets.length > 2 ? month(mid) : '' };
   return { start: day(buckets[0]), mid: day(mid) };
+}
+
+function timeLabel(date: Date) {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export const pad = (n: number) => String(n).padStart(2, '0');

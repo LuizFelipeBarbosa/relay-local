@@ -1,14 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { UsageSummary } from '../api';
-import { formatNumber, pad, requestEvents, tokensPerDay } from '../stats';
+import { RANGE_LABELS, RANGES, Range, formatNumber, pad, requestEvents, series, tokensPerDay } from '../stats';
 import { Kpi, PageHead, ViewProps } from './shared';
+import { TokenBuckets } from './TokenBuckets';
 
 const DAYS_SHOWN = 14;
 
 export function Usage({ data }: ViewProps) {
+  const [range, setRange] = useState<Range>('24h');
   const { today, lifetime } = data.usage;
   const live = data.usage.live;
-  const days = useMemo(() => tokensPerDay(requestEvents(data.events), DAYS_SHOWN), [data.events, data.refreshedAt]);
+  const events = useMemo(() => requestEvents(data.events), [data.events]);
+  const chart = useMemo(() => series(events, data.prices, range), [events, data.prices, range, data.refreshedAt]);
+  const days = useMemo(() => tokensPerDay(events, DAYS_SHOWN), [events, data.refreshedAt]);
   const max = Math.max(...days.map(d => d.input + d.output), 0);
   const tokens = (s: UsageSummary) => s.usage_reported ? formatNumber(s.total_tokens) : '—';
 
@@ -21,6 +25,13 @@ export function Usage({ data }: ViewProps) {
       <Kpi label="output · lifetime" value={lifetime.usage_reported ? formatNumber(lifetime.output_tokens) : '—'} sub="completion tokens" />
       <Kpi label="live · in flight" value={formatNumber(live?.requests || 0)} sub={`${formatNumber(live?.output_tokens_estimate || 0)} estimated output tokens`} />
     </div>
+    <section>
+      <div className="section-head">
+        <h2>Token timeline</h2>
+        <div className="ranges">{RANGES.map(r => <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>{RANGE_LABELS[r]}</button>)}</div>
+      </div>
+      <TokenBuckets chart={chart} live={live} />
+    </section>
     <section>
       <div className="section-head">
         <h2>Tokens per day <span className="sub">last {DAYS_SHOWN} days · from the last {data.events.length} recorded events</span></h2>

@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { backendTitle } from '../api';
-import { RANGES, Range, eventsSince, formatCompact, isPriced, linePath, percentChange, requestEvents, series, startOfDay, sumRevenue, tokensOf, usd } from '../stats';
+import { RANGE_LABELS, RANGES, Range, eventsSince, formatCompact, isPriced, linePath, percentChange, requestEvents, series, startOfDay, sumRevenue, tokensOf, usd } from '../stats';
 import { Delta, ViewProps } from './shared';
+import { TokenBuckets } from './TokenBuckets';
 
 export function Overview({ data, goTo }: ViewProps) {
   const [range, setRange] = useState<Range>('24h');
@@ -34,9 +35,10 @@ export function Overview({ data, goTo }: ViewProps) {
         <div className="section-head">
           <h2>Revenue and throughput</h2>
           <div className="legend"><span><i className="line" />USD / h</span><span><i className="dash" />tokens / s</span>{(usage.live?.requests || 0) > 0 && <span><i className="live-dot" />live output</span>}</div>
-          <div className="ranges">{RANGES.map(r => <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>{r}</button>)}</div>
+          <div className="ranges">{RANGES.map(r => <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>{RANGE_LABELS[r]}</button>)}</div>
         </div>
         <Chart chart={chart} live={usage.live} />
+        <TokenBuckets chart={chart} live={usage.live} />
       </section>
 
       <section>
