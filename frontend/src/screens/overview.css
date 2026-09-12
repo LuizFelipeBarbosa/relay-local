@@ -1,0 +1,105 @@
+/* Overview screen. Prefix: ov- */
+
+.ov-loading { padding: var(--space-16) 0; color: var(--ink-3); }
+
+.ov-lede {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-12) 0 var(--space-8);
+}
+.ov-lede-text { min-width: 0; }
+.ov-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--ink-2);
+  margin-bottom: var(--space-2);
+}
+.ov-headline { font-size: var(--text-display); margin-bottom: var(--space-3); }
+.ov-sub { color: var(--ink-2); max-width: 56ch; }
+
+.ov-table { font-size: var(--text-small); }
+.ov-table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+.ov-table td {
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.ov-table tr:last-child td { border-bottom: 0; }
+.ov-right { text-align: right; padding-right: 0 !important; }
+.ov-dim { color: var(--ink-3); }
+.ov-failed { color: var(--clay); }
+
+.ov-runtime { display: flex; align-items: flex-start; gap: var(--space-3); }
+.ov-glyph { color: var(--ink-3); display: flex; padding-top: 1px; }
+.ov-runtime-name { display: block; font-weight: 500; }
+.ov-runtime-id { display: block; font-size: var(--text-caption); color: var(--ink-3); }
+.ov-status { display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+
+.ov-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) 0;
+  color: var(--ink-3);
+  font-size: var(--text-small);
+}
+.ov-empty-text { color: var(--ink-3); font-size: var(--text-small); }
+
+.ov-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-8); }
+
+.ov-facts { font-size: var(--text-small); }
+.ov-facts th {
+  padding: var(--space-2) var(--space-4) var(--space-2) 0;
+  font-weight: 400;
+  color: var(--ink-3);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--rule);
+  width: 1%;
+}
+.ov-facts td {
+  padding: var(--space-2) var(--space-6) var(--space-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.ov-facts tr:last-child th, .ov-facts tr:last-child td { border-bottom: 0; }
+.ov-facts-wide td:last-child { padding-right: 0; }
+
+.ov-earnings { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.ov-earnings-label { font-size: var(--text-caption); color: var(--ink-3); }
+.ov-earnings-value {
+  font-family: var(--font-serif);
+  font-size: var(--text-display);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.ov-earnings-note { font-size: var(--text-caption); color: var(--ink-3); max-width: 44ch; }
+
+@media (max-width: 900px) {
+  .ov-lede { flex-direction: column; gap: var(--space-6); padding: var(--space-8) 0 var(--space-6); }
+  .ov-headline { font-size: 2rem; }
+  .ov-split { grid-template-columns: 1fr; gap: var(--space-6); }
+  .ov-empty { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+  .ov-facts-wide { display: block; }
+  .ov-facts-wide tbody, .ov-facts-wide tr { display: block; }
+  .ov-facts-wide th, .ov-facts-wide td { display: block; width: auto; padding-right: 0; border-bottom: 0; }
+  .ov-facts-wide th { padding-bottom: 0; }
+  .ov-facts-wide td { padding-top: 0; padding-bottom: var(--space-3); border-bottom: 1px solid var(--rule); }
+}
+
+/* Below 700px the endpoint moves under the runtime name so the state column survives. */
+.ov-runtime-url { display: none; font-size: var(--text-caption); color: var(--ink-3); }
+
+@media (max-width: 700px) {
+  .ov-address { display: none; }
+  .ov-runtime-url { display: block; }
+}

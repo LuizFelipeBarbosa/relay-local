@@ -1,0 +1,83 @@
+/* Activity screen. Prefix: ac- */
+
+.ac-loading { padding: var(--space-16) 0; color: var(--ink-3); }
+.ac-error { padding: var(--space-12) 0; }
+
+.ac-lede { padding: var(--space-12) 0 var(--space-8); }
+.ac-headline { font-size: var(--text-display); margin-bottom: var(--space-3); }
+.ac-sub { color: var(--ink-2); max-width: 56ch; }
+
+.ac-table { font-size: var(--text-small); }
+.ac-table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+.ac-table td {
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.ac-table tbody tr:last-child td { border-bottom: 0; }
+/* Right-aligned figures sit flush to the right, spaced from the column before them. */
+.ac-table .ac-right { text-align: right; padding-right: 0; padding-left: var(--space-4); }
+.ac-dim { color: var(--ink-3); }
+.ac-failed { color: var(--clay); }
+
+/* The sample count under a mean, so the average never has to be taken on trust. */
+.ac-figure-note {
+  display: block;
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* The log is long; give it tighter rows than the rollup above it. */
+.ac-log td { padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.ac-log { white-space: nowrap; }
+
+/* Pause and resume come from the same feed and read as interruptions, not rows of data. */
+.ac-event td {
+  background: var(--surface-sunk);
+  color: var(--ink-2);
+  white-space: normal;
+}
+.ac-event td:first-child { box-shadow: inset 2px 0 0 var(--rule-strong); }
+.ac-event-label { font-weight: 500; color: var(--ink); margin-right: var(--space-2); }
+
+.ac-total th,
+.ac-total td {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--rule-strong);
+  border-bottom: 0;
+  font-size: var(--text-small);
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.ac-chart-note {
+  margin-top: var(--space-3);
+  font-size: var(--text-small);
+  color: var(--ink-2);
+  max-width: 78ch;
+}
+
+.ac-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) 0;
+  color: var(--ink-3);
+  font-size: var(--text-small);
+}
+.ac-empty-text { color: var(--ink-3); font-size: var(--text-small); }
+
+@media (max-width: 900px) {
+  .ac-lede { padding: var(--space-8) 0 var(--space-6); }
+  .ac-headline { font-size: 2rem; }
+  .ac-empty { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+}

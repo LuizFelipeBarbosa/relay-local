@@ -1,0 +1,82 @@
+/* Settings screen. Prefix: st- */
+
+.st-loading { padding: var(--space-16) 0; color: var(--ink-3); }
+
+.st-lede { padding: var(--space-12) 0 var(--space-8); }
+.st-title { font-size: var(--text-title); margin-bottom: var(--space-3); }
+.st-sub { color: var(--ink-2); max-width: 62ch; }
+
+/* Fields sit on a flexible row and fall to one column on a narrow screen. */
+.st-grid { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.st-cell { flex: 1 1 200px; min-width: 0; }
+.st-cell-wide { flex: 1.6 1 260px; }
+.st-cell-narrow { flex: 0 1 104px; }
+
+.st-backends { display: flex; flex-direction: column; }
+.st-backend { padding: var(--space-6) 0; border-bottom: 1px solid var(--rule); }
+.st-backend:first-child { padding-top: 0; }
+.st-backend:last-child { padding-bottom: 0; border-bottom: 0; }
+
+.st-backend-head {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.st-glyph { color: var(--ink-3); display: flex; padding-top: 1px; flex: none; }
+/* The name yields first, and the confirm pair drops to its own line rather than
+   colliding with it on a narrow screen. */
+.st-backend-name { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
+.st-backend-label { display: block; font-weight: 500; }
+.st-backend-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+}
+.st-backend-kind::before { content: '·'; margin-right: var(--space-2); }
+.st-backend-action { flex: none; margin-left: auto; }
+.st-backend-error { font-size: var(--text-caption); color: var(--clay); margin-bottom: var(--space-3); }
+
+.st-empty-text { color: var(--ink-3); font-size: var(--text-small); }
+
+.st-table { font-size: var(--text-small); }
+.st-table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+.st-table td {
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.st-table tr:last-child td { border-bottom: 0; }
+.st-table td:last-child { padding-right: 0; }
+.st-dim { color: var(--ink-3); }
+
+/* The save row lines up under the data column, like a section body. */
+.st-save {
+  display: grid;
+  grid-template-columns: var(--label-col) minmax(0, 1fr);
+  gap: var(--space-8);
+  padding: var(--space-8) 0 0;
+  border-top: 1px solid var(--rule-strong);
+}
+.st-save-body { grid-column: 2; min-width: 0; }
+.st-save-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.st-save-state { font-size: var(--text-small); color: var(--ink-3); }
+.st-save-note { margin-top: var(--space-3); font-size: var(--text-caption); color: var(--ink-3); max-width: 72ch; }
+.st-save-error { margin-top: var(--space-4); }
+
+@media (max-width: 900px) {
+  .st-lede { padding: var(--space-8) 0 var(--space-6); }
+  .st-cell, .st-cell-wide, .st-cell-narrow { flex: 1 1 100%; }
+  .st-save { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); padding-top: var(--space-6); }
+  .st-save-body { grid-column: 1; }
+}

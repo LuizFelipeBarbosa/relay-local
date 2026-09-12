@@ -1,0 +1,185 @@
+/* Models screen. Prefix: md- */
+
+.md-loading { padding: var(--space-16) 0; color: var(--ink-3); }
+
+.md-lede {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-12) 0 var(--space-8);
+}
+.md-lede-text { min-width: 0; }
+.md-headline { font-size: var(--text-display); margin-bottom: var(--space-3); }
+.md-sub { color: var(--ink-2); max-width: 62ch; }
+
+.md-notice { margin-bottom: var(--space-4); }
+
+/* One block per runtime, separated by a hairline rather than a card. */
+.md-runtime + .md-runtime {
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--rule);
+}
+.md-runtime-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.md-glyph { color: var(--ink-3); display: flex; }
+.md-runtime-name { font-weight: 500; }
+.md-runtime-id,
+.md-runtime-url { font-size: var(--text-caption); color: var(--ink-3); }
+.md-runtime-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  font-size: var(--text-small);
+  white-space: nowrap;
+}
+
+.md-table { font-size: var(--text-small); }
+.md-table th {
+  padding: 0 var(--space-3) var(--space-2) 0;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+.md-table td {
+  padding: var(--space-3) var(--space-3) var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.md-table tr:last-child td { border-bottom: 0; }
+.md-right { text-align: right; padding-right: 0 !important; }
+.md-dim { color: var(--ink-3); }
+
+/* The offer and remove controls stay on one line whatever the column width. */
+.md-inventory th:last-child,
+.md-inventory td:last-child { white-space: nowrap; }
+
+/* Each runtime has its own table; these keep the columns on one line down the page. */
+.md-inventory th:first-child,
+.md-inventory td:first-child { min-width: 320px; }
+.md-inventory th:nth-child(2),
+.md-inventory td:nth-child(2) { min-width: 200px; }
+
+/* A footnote sits away from the last block it follows, on its own hairline. */
+.md-footnote {
+  margin-top: var(--space-6);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--rule);
+}
+
+.md-empty-text,
+.md-diagnose { color: var(--ink-3); font-size: var(--text-small); max-width: 74ch; }
+.md-diagnose { color: var(--ink-2); }
+
+.md-target { font-size: var(--text-small); color: var(--ink-2); max-width: 74ch; }
+
+.md-install {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+  max-width: 460px;
+}
+.md-install .ui-field { flex: 1 1 220px; }
+.md-hint {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-caption);
+  color: var(--ink-3);
+  max-width: 62ch;
+}
+
+.md-job {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--rule);
+  font-size: var(--text-small);
+}
+.md-job-model { font-size: var(--text-caption); }
+.md-job-state { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--ink-2); }
+.md-job-percent { color: var(--ink-3); }
+
+.md-subhead { margin: var(--space-8) 0 var(--space-3); }
+
+.md-prices td { vertical-align: top; }
+.md-stored { white-space: nowrap; color: var(--ink-2); }
+.md-slash { color: var(--ink-3); }
+
+.md-price-cell { width: 128px; }
+/* The column heading already names the field; the label stays for screen readers. */
+.md-price-cell .ui-field-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.md-save { display: inline-flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); }
+.md-saved { font-size: var(--text-caption); color: var(--moss); }
+.md-row-error { font-size: var(--text-caption); color: var(--clay); max-width: 24ch; text-align: right; }
+
+/* The digest sits in its own column until the screen is too narrow to hold one. */
+.md-stacked-digest { display: none; }
+
+@media (max-width: 900px) {
+  .md-lede { flex-direction: column; gap: var(--space-4); padding: var(--space-8) 0 var(--space-6); }
+  .md-headline { font-size: 2rem; }
+  .md-runtime-state { margin-left: 0; width: 100%; }
+  .md-install { max-width: none; }
+}
+
+@media (max-width: 720px) {
+  /* The offer and remove controls must stay in view, so the digest moves under
+     the model name and the price rows stop being a grid of columns. */
+  .md-inventory th:first-child,
+  .md-inventory td:first-child,
+  .md-inventory th:nth-child(2),
+  .md-inventory td:nth-child(2) { min-width: 0; }
+  .md-inventory th:nth-child(2),
+  .md-inventory td:nth-child(2) { display: none; }
+  .md-stacked-digest {
+    display: block;
+    font-size: var(--text-caption);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .md-prices thead { display: none; }
+  .md-prices,
+  .md-prices tbody,
+  .md-prices tr,
+  .md-prices td { display: block; }
+  .md-prices tr { padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); }
+  .md-prices tr:last-child { border-bottom: 0; }
+  .md-prices td { padding: 0 0 var(--space-3) 0; border-bottom: 0; }
+  .md-prices .md-stored { padding-bottom: var(--space-2); }
+  .md-price-cell { width: 100%; max-width: 240px; }
+  .md-price-cell .ui-field-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+  .md-prices .md-right { text-align: left; padding-right: 0 !important; }
+  .md-save { align-items: flex-start; }
+  .md-row-error { text-align: left; }
+}
