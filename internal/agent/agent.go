@@ -44,6 +44,7 @@ type AttemptEvent struct {
 	Code      string
 	Duration  time.Duration
 	Usage     json.RawMessage
+	Bytes     int64
 }
 
 func New(c config.Agent, logger *slog.Logger) (*Agent, error) {
@@ -421,6 +422,7 @@ func (a *Agent) execute(ctx context.Context, p *wire.Peer, m protocol.Message, s
 	if err = p.Send(ctx, protocol.Message{Type: "response_start", AttemptID: m.AttemptID, Status: resp.StatusCode, ContentType: contentType}); err != nil {
 		return
 	}
+	a.emit(AttemptEvent{RequestID: m.RequestID, AttemptID: m.AttemptID, BackendID: m.BackendID, Model: model, Type: "response_start"})
 	observer := backend.Observer{Stream: contentType == "text/event-stream"}
 	buf := make([]byte, protocol.ChunkBytes)
 	var seq uint64
@@ -433,6 +435,7 @@ func (a *Agent) execute(ctx context.Context, p *wire.Peer, m protocol.Message, s
 				return
 			}
 			count += int64(n)
+			a.emit(AttemptEvent{RequestID: m.RequestID, AttemptID: m.AttemptID, BackendID: m.BackendID, Model: model, Type: "response_chunk", Bytes: int64(n), Duration: time.Since(started)})
 		}
 		if readErr != nil {
 			observer.Finish()
