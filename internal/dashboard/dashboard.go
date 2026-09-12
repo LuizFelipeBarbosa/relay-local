@@ -260,7 +260,9 @@ func (m *Managed) runtimes(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		name := b.Label
-		if name == "" { name = b.ID }
+		if name == "" {
+			name = b.ID
+		}
 		result = append(result, map[string]any{"name": name, "id": b.ID, "endpoint": b.URL, "configured": true, "binary": installer.Detect("cliproxyapi")})
 	}
 	writeJSON(w, result)
@@ -531,9 +533,6 @@ func (m *Managed) configuration(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		m.mu.RLock()
 		c := m.config
-		for i := range c.Backends {
-			c.Backends[i].KeyEnv = ""
-		}
 		m.mu.RUnlock()
 		writeJSON(w, c)
 		return
@@ -559,13 +558,40 @@ func (m *Managed) configuration(w http.ResponseWriter, r *http.Request) {
 
 func (m *Managed) prices(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		m.mu.RLock(); prices := m.config.Prices; m.mu.RUnlock(); if prices == nil { prices = map[string]config.Price{} }; writeJSON(w, prices); return
+		m.mu.RLock()
+		prices := m.config.Prices
+		m.mu.RUnlock()
+		if prices == nil {
+			prices = map[string]config.Price{}
+		}
+		writeJSON(w, prices)
+		return
 	}
-	if r.Method != http.MethodPost { w.WriteHeader(http.StatusMethodNotAllowed); return }
-	var input struct { Model string `json:"model"`; Input string `json:"input_per_million"`; Output string `json:"output_per_million"` }
-	if json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&input) != nil || input.Model == "" { writeError(w, http.StatusBadRequest, "model is required"); return }
-	m.mu.Lock(); if m.config.Prices == nil { m.config.Prices = map[string]config.Price{} }; m.config.Prices[input.Model] = config.Price{InputPerMillion: input.Input, OutputPerMillion: input.Output}; updated := m.config; m.mu.Unlock()
-	if err := m.save(); err != nil { writeError(w, http.StatusInternalServerError, "could not save price"); return }; writeJSON(w, updated.Prices)
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var input struct {
+		Model  string `json:"model"`
+		Input  string `json:"input_per_million"`
+		Output string `json:"output_per_million"`
+	}
+	if json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&input) != nil || input.Model == "" {
+		writeError(w, http.StatusBadRequest, "model is required")
+		return
+	}
+	m.mu.Lock()
+	if m.config.Prices == nil {
+		m.config.Prices = map[string]config.Price{}
+	}
+	m.config.Prices[input.Model] = config.Price{InputPerMillion: input.Input, OutputPerMillion: input.Output}
+	updated := m.config
+	m.mu.Unlock()
+	if err := m.save(); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not save price")
+		return
+	}
+	writeJSON(w, updated.Prices)
 }
 
 func (m *Managed) replaceConfig(c config.Agent) error {

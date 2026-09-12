@@ -22,8 +22,11 @@ The dashboard is bound to `127.0.0.1:7331` and authenticates with a generated
 owner-only token. It discovers the complete inventory exposed by configured local
 Ollama and CLIProxyAPI endpoints, while only allowlisted models are advertised to
 the coordinator. The Models page can enable or disable offers independently of
-what is installed. Ollama pull and delete jobs are exposed through the dashboard;
-provider sign-in remains in CLIProxyAPI's own supported browser or terminal flow.
+what is installed. Settings can add loopback CLIProxyAPI endpoints, configure
+their API-key environment variable, and configure Ollama's endpoint. Ollama pull
+and delete jobs are exposed through the Models page; provider sign-in remains in
+CLIProxyAPI's own supported browser or terminal flow, after which Refresh imports
+the provider models.
 
 Runtime release artifacts are selected through the checked-in installer manifest
 and are rejected unless their SHA-256 matches the pinned entry. A release must
