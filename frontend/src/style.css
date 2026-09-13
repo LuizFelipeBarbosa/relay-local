@@ -163,7 +163,7 @@ code { font-family: var(--mono); font-size: 13px; color: var(--ink); }
 .token-buckets-legend span { display: flex; align-items: center; gap: 5px; }
 .token-key { width: 9px; height: 9px; display: inline-block; }
 .token-key.input { background: var(--ink-3); }
-.token-key.output { background: var(--ink-2); }
+.token-key.output { background: var(--accent); }
 .token-key.live { background: var(--accent); }
 .token-bars { height: 160px; display: flex; align-items: end; gap: 4px; border-bottom: 1px solid var(--ink); padding: 12px 2px 28px; background: repeating-linear-gradient(to bottom, transparent 0, transparent 32px, var(--rule) 33px); }
 .token-bar { min-width: 0; flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: end; position: relative; }
@@ -173,7 +173,7 @@ code { font-family: var(--mono); font-size: 13px; color: var(--ink); }
 .token-bar-stack { width: 100%; min-height: 1px; display: flex; flex-direction: column; justify-content: end; position: relative; overflow: hidden; border-radius: 3px 3px 0 0; background: var(--fill); }
 .token-bar-input, .token-bar-output, .token-bar-live { display: block; width: 100%; min-height: 1px; }
 .token-bar-input { background: var(--ink-3); }
-.token-bar-output { background: var(--ink-2); }
+.token-bar-output { background: var(--accent); }
 .token-bar-live { display: block; width: 100%; background: var(--accent); min-height: 2px; animation: live-pulse 1.5s ease-in-out infinite; }
 .token-bar-label { position: absolute; top: calc(100% + 7px); font-family: var(--mono); font-size: 9px; color: var(--ink-3); text-align: center; white-space: nowrap; }
 .runtime-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
