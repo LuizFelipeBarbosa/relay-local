@@ -18,13 +18,18 @@ export function Usage({ data }: ViewProps) {
   const tokens = (s: UsageSummary) => s.usage_reported ? formatNumber(s.total_tokens) : '—';
 
   return <>
-    <PageHead title="Usage" note="refreshes every 2 seconds · in-flight output is estimated until final usage arrives" />
+    <div className="usage-header">
+      <div className="usage-header-top"><h1>Usage</h1><span className="note">refreshes every 2 seconds · in-flight output is estimated until final usage arrives</span></div>
+      <div className="usage-live-label"><i className="live-dot" />live output tokens</div>
+      <div className="usage-live-value">{formatNumber(live?.output_tokens_estimate || 0)}</div>
+      <div className="usage-live-sub">estimated tokens currently being generated · {formatNumber(live?.requests || 0)} active {live?.requests === 1 ? 'request' : 'requests'}</div>
+    </div>
     <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
       <Kpi label="today" value={tokens(today)} sub={`${today.requests} requests${today.complete ? '' : ' · usage missing on some'}`} />
       <Kpi label="lifetime" value={tokens(lifetime)} sub={`${formatNumber(lifetime.requests)} requests`} />
       <Kpi label="input · lifetime" value={lifetime.usage_reported ? formatNumber(lifetime.input_tokens) : '—'} sub="prompt tokens" />
       <Kpi label="output · lifetime" value={lifetime.usage_reported ? formatNumber(lifetime.output_tokens) : '—'} sub="completion tokens" />
-      <Kpi label="live · in flight" value={formatNumber(live?.requests || 0)} sub={`${formatNumber(live?.output_tokens_estimate || 0)} estimated output tokens`} />
+      <Kpi label="live · in flight" value={formatNumber(live?.requests || 0)} sub="active requests" />
     </div>
     <section>
       <div className="section-head">

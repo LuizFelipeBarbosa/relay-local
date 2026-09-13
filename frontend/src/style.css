@@ -105,6 +105,12 @@ code { font-family: var(--mono); font-size: 13px; color: var(--ink); }
 
 /* Page and section headings */
 .page-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.usage-header { border-top: 2px solid var(--ink); padding-top: 14px; }
+.usage-header-top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.usage-live-label { display: flex; align-items: center; gap: 8px; margin-top: 22px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .06em; }
+.usage-live-label .live-dot { width: 8px; height: 8px; display: inline-block; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent); animation: live-pulse 1.5s ease-in-out infinite; }
+.usage-live-value { margin-top: 4px; font-family: var(--font-heading); font-size: clamp(48px, 7vw, 76px); font-weight: 800; line-height: .98; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.usage-live-sub { margin-top: 8px; color: var(--ink-3); font-size: 14px; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--ink); }
 .section-head h2 .sub { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--ink-3); margin-left: 8px; }
 .section-head .links { display: flex; gap: 16px; font-size: 13px; }
