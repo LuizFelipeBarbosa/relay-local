@@ -79,14 +79,16 @@ export function eventsSince(events: HistoryEvent[], since: Date, until?: Date) {
   });
 }
 
-export type Series = { revenue: number[]; throughput: number[]; tokens: number[]; bucket: '15m' | 'hour' | 'day' | 'month'; bucketLabels: string[]; start: string; mid: string; hasData: boolean };
+export type Series = { revenue: number[]; throughput: number[]; tokens: number[]; inputTokens: number[]; outputTokens: number[]; bucket: '15m' | 'hour' | 'day' | 'month'; bucketLabels: string[]; start: string; mid: string; hasData: boolean };
 
 /** Buckets request history into a revenue-per-bucket and throughput-per-bucket series for the chart. */
 export function series(events: HistoryEvent[], prices: Prices, range: Range, now = new Date()): Series {
   const buckets = bucketsFor(range, now);
   const revenue = new Array(buckets.length).fill(0);
   const tokens = new Array(buckets.length).fill(0);
+  const inputTokens = new Array(buckets.length).fill(0);
   const outputTokens = new Array(buckets.length).fill(0);
+  const throughputTokens = new Array(buckets.length).fill(0);
   const seconds = new Array(buckets.length).fill(0);
   for (const event of events) {
     const t = new Date(event.time).getTime();
@@ -94,22 +96,26 @@ export function series(events: HistoryEvent[], prices: Prices, range: Range, now
     if (index < 0) continue;
     revenue[index] += revenueOf(event, prices);
     tokens[index] += tokensOf(event);
+    if (event.usage_reported) {
+      inputTokens[index] += event.input_tokens || 0;
+      outputTokens[index] += event.output_tokens || 0;
+    }
     if (event.status === 'completed' && event.output_tokens && event.duration_ms) {
-      outputTokens[index] += event.output_tokens;
+      throughputTokens[index] += event.output_tokens;
       seconds[index] += event.duration_ms / 1000;
     }
   }
-  const throughput = outputTokens.map((tokens, i) => seconds[i] > 0 ? tokens / seconds[i] : 0);
+  const throughput = throughputTokens.map((tokens, i) => seconds[i] > 0 ? tokens / seconds[i] : 0);
   const labels = axisLabels(range, buckets);
   const bucket = range === '15m' ? '15m' : range === '24h' ? 'hour' : range === 'ytd' ? 'month' : 'day';
   const bucketLabels = buckets.map(d => bucket === 'month' ? d.toLocaleDateString(undefined, { month: 'short' }).toLowerCase() : bucket === 'day' ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }).toLowerCase() : timeLabel(d));
-  return { revenue, throughput, tokens, bucket, bucketLabels, ...labels, hasData: revenue.some(v => v > 0) || throughput.some(v => v > 0) || tokens.some(v => v > 0) };
+  return { revenue, throughput, tokens, inputTokens, outputTokens, bucket, bucketLabels, ...labels, hasData: revenue.some(v => v > 0) || throughput.some(v => v > 0) || tokens.some(v => v > 0) || inputTokens.some(v => v > 0) || outputTokens.some(v => v > 0) };
 }
 
 function bucketsFor(range: Range, now: Date): Date[] {
   if (range === '15m') {
     const current = Math.floor(now.getTime() / 900_000) * 900_000;
-    return Array.from({ length: 16 }, (_, i) => new Date(current - (15 - i) * 900_000));
+    return Array.from({ length: 8 }, (_, i) => new Date(current - (7 - i) * 900_000));
   }
   if (range === '24h') {
     const currentHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours());
@@ -159,7 +165,7 @@ export function tokensPerDay(events: HistoryEvent[], days: number, now = new Dat
   return result;
 }
 
-export type ModelStats = { model: string; requests: number; failed: number; tokens: number; revenue: number; throughputP50: number | null; durationP50: number | null; durationP95: number | null };
+export type ModelStats = { model: string; requests: number; failed: number; tokens: number; inputTokens: number; outputTokens: number; revenue: number; throughputP50: number | null; durationP50: number | null; durationP95: number | null };
 
 export function perModel(events: HistoryEvent[], prices: Prices): ModelStats[] {
   const groups = new Map<string, HistoryEvent[]>();
@@ -175,6 +181,8 @@ export function perModel(events: HistoryEvent[], prices: Prices): ModelStats[] {
       requests: list.length,
       failed: list.filter(e => e.status !== 'completed').length,
       tokens: list.reduce((n, e) => n + tokensOf(e), 0),
+      inputTokens: list.reduce((n, e) => n + (e.usage_reported ? (e.input_tokens || 0) : 0), 0),
+      outputTokens: list.reduce((n, e) => n + (e.usage_reported ? (e.output_tokens || 0) : 0), 0),
       revenue: sumRevenue(list, prices),
       throughputP50: percentile(throughputs, 50),
       durationP50: percentile(durations, 50),

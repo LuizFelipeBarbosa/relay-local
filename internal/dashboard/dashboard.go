@@ -51,8 +51,9 @@ type Managed struct {
 }
 
 type liveAttempt struct {
-	Model string
-	Bytes int64
+	Model     string
+	Bytes     int64
+	TextBytes int64
 }
 
 type ModelJob struct {
@@ -315,13 +316,14 @@ func (m *Managed) usage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m.activeMu.Lock()
-	liveRequests, liveBytes := len(m.active), int64(0)
+	liveRequests, liveBytes, liveTextBytes := len(m.active), int64(0), int64(0)
 	for _, attempt := range m.active {
 		liveBytes += attempt.Bytes
+		liveTextBytes += attempt.TextBytes
 	}
 	m.activeMu.Unlock()
 	writeJSON(w, map[string]any{"today": today, "lifetime": lifetime, "live": map[string]any{
-		"requests": liveRequests, "bytes": liveBytes, "output_tokens_estimate": liveBytes / 4,
+		"requests": liveRequests, "bytes": liveBytes, "output_tokens_estimate": liveTextBytes / 4,
 	}, "complete": true})
 }
 
@@ -336,6 +338,7 @@ func (m *Managed) recordAttempt(event agent.AttemptEvent) {
 		m.activeMu.Lock()
 		if attempt := m.active[event.AttemptID]; attempt != nil {
 			attempt.Bytes += event.Bytes
+			attempt.TextBytes += event.TextBytes
 		}
 		m.activeMu.Unlock()
 		return

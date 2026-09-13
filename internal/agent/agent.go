@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -45,6 +46,7 @@ type AttemptEvent struct {
 	Duration  time.Duration
 	Usage     json.RawMessage
 	Bytes     int64
+	TextBytes int64
 }
 
 func New(c config.Agent, logger *slog.Logger) (*Agent, error) {
@@ -338,6 +340,41 @@ func (a *Agent) session(parent context.Context) error {
 	}
 }
 
+// estimateTextBytes counts model text in a backend response chunk while
+// ignoring SSE framing and JSON metadata. It is used only for live display;
+// completed requests use the provider-reported usage values.
+func estimateTextBytes(p []byte) int64 {
+	var total int64
+	for _, line := range bytes.Split(p, []byte{'\n'}) {
+		line = bytes.TrimSpace(line)
+		if bytes.HasPrefix(line, []byte("data:")) {
+			line = bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
+		}
+		if len(line) == 0 || bytes.Equal(line, []byte("[DONE]")) {
+			continue
+		}
+		var chunk struct {
+			Choices []struct {
+				Delta struct {
+					Content   string `json:"content"`
+					Reasoning string `json:"reasoning"`
+				} `json:"delta"`
+				Message struct {
+					Content   string `json:"content"`
+					Reasoning string `json:"reasoning"`
+				} `json:"message"`
+			} `json:"choices"`
+		}
+		if json.Unmarshal(line, &chunk) != nil {
+			continue
+		}
+		for _, choice := range chunk.Choices {
+			total += int64(len([]byte(choice.Delta.Content)) + len([]byte(choice.Delta.Reasoning)) + len([]byte(choice.Message.Content)) + len([]byte(choice.Message.Reasoning)))
+		}
+	}
+	return total
+}
+
 func (a *Agent) reserve(m protocol.Message) (*slot, string, string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -435,7 +472,7 @@ func (a *Agent) execute(ctx context.Context, p *wire.Peer, m protocol.Message, s
 				return
 			}
 			count += int64(n)
-			a.emit(AttemptEvent{RequestID: m.RequestID, AttemptID: m.AttemptID, BackendID: m.BackendID, Model: model, Type: "response_chunk", Bytes: int64(n), Duration: time.Since(started)})
+			a.emit(AttemptEvent{RequestID: m.RequestID, AttemptID: m.AttemptID, BackendID: m.BackendID, Model: model, Type: "response_chunk", Bytes: int64(n), TextBytes: estimateTextBytes(buf[:n]), Duration: time.Since(started)})
 		}
 		if readErr != nil {
 			observer.Finish()

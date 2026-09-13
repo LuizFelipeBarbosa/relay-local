@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { UsageSummary } from '../api';
-import { RANGE_LABELS, RANGES, Range, formatNumber, pad, requestEvents, series, tokensPerDay } from '../stats';
+import { RANGE_LABELS, RANGES, Range, formatNumber, pad, perModel, requestEvents, series, tokensPerDay } from '../stats';
 import { Kpi, PageHead, ViewProps } from './shared';
 import { TokenBuckets } from './TokenBuckets';
 
@@ -13,6 +13,7 @@ export function Usage({ data }: ViewProps) {
   const events = useMemo(() => requestEvents(data.events), [data.events]);
   const chart = useMemo(() => series(events, data.prices, range), [events, data.prices, range, data.refreshedAt]);
   const days = useMemo(() => tokensPerDay(events, DAYS_SHOWN), [events, data.refreshedAt]);
+  const models = useMemo(() => perModel(events, data.prices).sort((a, b) => b.tokens - a.tokens), [events, data.prices]);
   const max = Math.max(...days.map(d => d.input + d.output), 0);
   const tokens = (s: UsageSummary) => s.usage_reported ? formatNumber(s.total_tokens) : '—';
 
@@ -45,6 +46,24 @@ export function Usage({ data }: ViewProps) {
       </div>
       <div className="day-labels">{days.map(d => <span key={d.date.getTime()}>{pad(d.date.getDate())}</span>)}</div>
       {max === 0 && <div className="empty">No token usage recorded in this window yet.</div>}
+    </section>
+    <section>
+      <div className="section-head">
+        <h2>Usage by model</h2>
+        <span className="note">recorded requests · input and output tokens</span>
+      </div>
+      {models.length === 0 ? <div className="empty">No model usage recorded yet.</div> : <div className="scroll">
+        <div className="usage-model-table">
+          <div className="usage-model-row head"><span>model</span><span className="right">requests</span><span className="right">input</span><span className="right">output</span><span className="right">total</span></div>
+          {models.map(model => <div className="usage-model-row" key={model.model}>
+            <span className="model">{model.model}</span>
+            <span className="right">{formatNumber(model.requests)}</span>
+            <span className="right">{formatNumber(model.inputTokens)}</span>
+            <span className="right">{formatNumber(model.outputTokens)}</span>
+            <span className="right">{formatNumber(model.tokens)}</span>
+          </div>)}
+        </div>
+      </div>}
     </section>
   </>;
 }
